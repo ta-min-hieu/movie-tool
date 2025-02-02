@@ -21,11 +21,13 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Log4j2
@@ -249,6 +251,74 @@ public class TestServiceImpl implements TestService {
     }
 
     @Override
+    public void generatePlaylistPreview() {
+
+    }
+
+    public static void main(String[] args) {
+//        String removeText = "#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subs\",NAME=\"English\",DEFAULT=YES,AUTOSELECT=YES,FORCED=NO,LANGUAGE=\"en\",URI=\"subs/index.m3u8\"";
+//        String filePath = "D:\\lam-java\\file-test\\hieutm\\playlist2.m3u8";
+//        testXoaInFile(filePath, removeText);
+
+        createPreviewFile("D:\\\\lam-java\\\\file-test\\\\hieutm\\\\playlist2.m3u8", "D:\\\\lam-java\\\\file-test\\\\hieutm\\\\playlist2.m3u8", "123");
+    }
+
+    private static void createPreviewFile(String filePath, String filePathCreate, String movieId) {
+//        String cmd = "cp " + filePath + " " + filePathCreate;
+//         Lệnh copy file
+//         executeCommand();
+
+        try {
+            Path path = Path.of(filePathCreate);
+            if (!Files.exists(path)) {
+                System.out.println("File không tồn tại: " + filePathCreate);
+                return;
+            }
+
+            // Đọc toàn bộ nội dung file
+            List<String> lines = Files.readAllLines(path);
+
+            for(int i=0; i<lines.size(); i++) {
+                String line = lines.get(i);
+                if(line.startsWith("240") || line.startsWith("360") || line.startsWith("480") || line.startsWith("720"))
+                    lines.set(i, "https://lumitelmovie-prod.ringme.vn/movie-api/preview/" + movieId + "/" + line);
+            }
+
+            // Ghi lại nội dung đã chỉnh sửa vào file (xóa nội dung cũ trước khi ghi)
+            Files.write(path, lines, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+
+            System.out.println("Xong: ");
+        } catch (Exception e) {
+            System.err.println("Lỗi khi xử lý file: " + e.getMessage() + "|" + e);
+        }
+    }
+
+    private static void testXoaInFile(String filePath, String removeText) {
+        try {
+            Path path = Path.of(filePath);
+            if (!Files.exists(path)) {
+                System.out.println("File không tồn tại: " + filePath);
+                return;
+            }
+
+            // Đọc toàn bộ nội dung file
+            List<String> lines = Files.readAllLines(path);
+
+            // Lọc ra các dòng không chứa removeText
+            List<String> updatedLines = lines.stream()
+                    .filter(line -> !line.contains(removeText))
+                    .collect(Collectors.toList());
+
+            // Ghi lại nội dung đã chỉnh sửa vào file (xóa nội dung cũ trước khi ghi)
+            Files.write(path, updatedLines, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+
+            System.out.println("Đã xóa nội dung có chứa: " + removeText);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi xử lý file: " + e.getMessage() + "|" + e);
+        }
+    }
+
+    @Override
     public void subtitleHandler(VcsMedia media) {
         if(media == null) {
             log.warn("media is null");
@@ -338,6 +408,7 @@ public class TestServiceImpl implements TestService {
             }
 
             addTextIntoFile(fileM3u8Path, text);
+            addTextIntoFile(fileM3u8Path.replace("playlist.m3u8", "playlist_preview.m3u8"), text);
 
             log.info("success");
         } catch (Exception e) {
