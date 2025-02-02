@@ -260,15 +260,15 @@ public class TestServiceImpl implements TestService {
 //        String filePath = "D:\\lam-java\\file-test\\hieutm\\playlist2.m3u8";
 //        testXoaInFile(filePath, removeText);
 
-        createPreviewFile("D:\\\\lam-java\\\\file-test\\\\hieutm\\\\playlist2.m3u8", "D:\\\\lam-java\\\\file-test\\\\hieutm\\\\playlist2.m3u8", "123");
+//        createPreviewFile("D:\\\\lam-java\\\\file-test\\\\hieutm\\\\playlist2.m3u8", "D:\\\\lam-java\\\\file-test\\\\hieutm\\\\playlist2.m3u8", "123");
     }
 
-    private static void createPreviewFile(String filePath, String filePathCreate, String movieId) {
-//        String cmd = "cp " + filePath + " " + filePathCreate;
-//         Lệnh copy file
-//         executeCommand();
-
+    private void createPreviewFile(String filePath, String filePathCreate, String movieId) {
         try {
+            String cmd = "cp " + filePath + " " + filePathCreate;
+//         Lệnh copy file
+            executeCommand(cmd);
+
             Path path = Path.of(filePathCreate);
             if (!Files.exists(path)) {
                 System.out.println("File không tồn tại: " + filePathCreate);
@@ -280,8 +280,14 @@ public class TestServiceImpl implements TestService {
 
             for(int i=0; i<lines.size(); i++) {
                 String line = lines.get(i);
-                if(line.startsWith("240") || line.startsWith("360") || line.startsWith("480") || line.startsWith("720"))
-                    lines.set(i, "https://lumitelmovie-prod.ringme.vn/movie-api/preview/" + movieId + "/" + line);
+                if(line.startsWith("240"))
+                    lines.set(i, "https://lumitelmovie-prod.ringme.vn/movie-api/preview/" + movieId + "/240/index.m3u8");
+                else if(line.startsWith("360"))
+                    lines.set(i, "https://lumitelmovie-prod.ringme.vn/movie-api/preview/" + movieId + "/360/index.m3u8");
+                else if(line.startsWith("480"))
+                    lines.set(i, "https://lumitelmovie-prod.ringme.vn/movie-api/preview/" + movieId + "/480/index.m3u8");
+                else if(line.startsWith("720"))
+                    lines.set(i, "https://lumitelmovie-prod.ringme.vn/movie-api/preview/" + movieId + "/720/index.m3u8");
             }
 
             // Ghi lại nội dung đã chỉnh sửa vào file (xóa nội dung cũ trước khi ghi)
@@ -376,6 +382,23 @@ public class TestServiceImpl implements TestService {
         String fileM3u8Path = "/media01" + mediaPath;
 
         generateSubtitleHandler(folderPath, subtilePath, fileM3u8Path, subtile.getLanguage());
+    }
+
+    @Override
+    public void standardPlaylistFile() {
+        List<VcsMedia> mediaList = mediaRepository.getVcsMediaConvertDone();
+        String removeText = "#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subs\",NAME=\"English\",DEFAULT=YES,AUTOSELECT=YES,FORCED=NO,LANGUAGE=\"en\",URI=\"subs/index.m3u8\"";
+
+        for(VcsMedia media : mediaList) {
+            String filePath = "/media01" + media.getMediaPath();
+
+            testXoaInFile(filePath, removeText);
+
+            String filePathCreate = filePath.replace("playlist.m3u8", "playlist_preview.m3u8");
+            log.info("filePathCreate|" + filePathCreate);
+
+            createPreviewFile(filePath, filePathCreate, String.valueOf(media.getId()));
+        }
     }
 
     private void generateSubtitleHandler(String folderPath, String subtitlePath, String fileM3u8Path, String language) {

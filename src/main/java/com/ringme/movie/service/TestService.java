@@ -25,4 +25,6 @@ public interface TestService {
     void subtitleHandler(VcsMedia media);
 
     void generateSubtileForCms(VcsMediaSubtile subtile, VcsMedia media);
+
+    void standardPlaylistFile();
 }

@@ -125,4 +125,13 @@ public class TestController {
 
         return ResponseEntity.ok().body(new Response(200, "Success"));
     }
+
+    @GetMapping("/standard-playlist-file")
+    ResponseEntity<?> standardPlaylistFile() {
+        log.info("vào đây");
+
+        service.standardPlaylistFile();
+
+        return ResponseEntity.ok().body(new Response(200, "Success"));
+    }
 }
