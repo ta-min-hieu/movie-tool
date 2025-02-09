@@ -223,15 +223,14 @@ public class TestServiceImpl implements TestService {
     @Override
     public void executeCommand(String command) {
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder(
-                    "bash", "-c", command
-            );
-
+            ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", command);
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
+
             int exitCode = process.waitFor();
 
             if (exitCode != 0) {
+                log.info("exit code|{}", exitCode);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 String line;
                 while ((line = reader.readLine()) != null)
@@ -241,6 +240,10 @@ public class TestServiceImpl implements TestService {
             log.error("ERROR|{}", e.getMessage(), e);
         }
     }
+
+//    private String executeCommandGetStringByPattern(String command, ) {
+//
+//    }
 
     @Override
     public void generateSubtile() {
@@ -398,6 +401,18 @@ public class TestServiceImpl implements TestService {
             log.info("filePathCreate|" + filePathCreate);
 
             createPreviewFile(filePath, filePathCreate, String.valueOf(media.getId()));
+        }
+    }
+
+    @Override
+    public void standardMediaTime() {
+        List<VcsMedia> mediaList = mediaRepository.getVcsMediaConvertDone();
+
+        for(VcsMedia media : mediaList) {
+            int duration = executeCommandAndGetDuration(appConfig.getGetMediaTimeInM3u8().replace("{{mediaPath}}", "/media01" + media.getMediaPath()));
+            int mediaId = media.getId();
+            log.info("mediaId|{}|duration|{}", mediaId, duration);
+            mediaRepository.updateMediaTimeById(media.getId(), duration);
         }
     }
 
@@ -644,5 +659,34 @@ public class TestServiceImpl implements TestService {
         } catch (Exception e) {
             log.error("ERROR|" + e.getMessage(), e);
         }
+    }
+
+    private int executeCommandAndGetDuration(String command) {
+        StringBuilder output = new StringBuilder();
+
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", command);
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+
+            // Đọc đầu ra từ lệnh
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    output.append(line).append("\n");
+                }
+            }
+
+            int exitCode = process.waitFor();
+            if (exitCode != 0)
+                log.info("Command exited with code: {}", exitCode);
+
+            String duration = output.toString();
+            log.info("Command duration output: {}", duration);
+            return (int) Math.round(Double.parseDouble(duration));
+        } catch (Exception e) {
+            log.error("ERROR: {}", e.getMessage(), e);
+        }
+        return 0;
     }
 }

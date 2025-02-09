@@ -27,4 +27,6 @@ public interface TestService {
     void generateSubtileForCms(VcsMediaSubtile subtile, VcsMedia media);
 
     void standardPlaylistFile();
+
+    void standardMediaTime();
 }

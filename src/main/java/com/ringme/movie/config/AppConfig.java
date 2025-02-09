@@ -33,4 +33,7 @@ public class AppConfig {
 
     @Value("${edit-sub-profile-360}")
     private String editSubProfile360;
+
+    @Value("${get-media-time-in-m3u8}")
+    private String getMediaTimeInM3u8;
 }
