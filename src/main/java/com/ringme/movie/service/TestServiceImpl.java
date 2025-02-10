@@ -27,6 +27,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -241,9 +243,45 @@ public class TestServiceImpl implements TestService {
         }
     }
 
-//    private String executeCommandGetStringByPattern(String command, ) {
-//
-//    }
+    // lấy ra thông tin stream
+    private String executeCommandGetStringByPattern(String command, String regex, String containStr) {
+        String output = null;
+
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", command);
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+
+            // Đọc đầu ra từ lệnh
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if(line.contains(containStr)) {
+                        // Stream #(.*?)(?=\(eng\): Subtitle: subrip)
+
+                        Pattern pattern = Pattern.compile(regex);
+                        Matcher matcher = pattern.matcher(line);
+
+                        if (matcher.find())
+                            output = matcher.group(1).trim();
+                        else
+                            log.info("Không tìm thấy!");
+                        break;
+                    }
+                }
+            }
+
+            int exitCode = process.waitFor();
+            if (exitCode != 0)
+                log.info("Command exited with code: {}", exitCode);
+
+            log.info("Command output: {}", output);
+            return output;
+        } catch (Exception e) {
+            log.error("ERROR: {}", e.getMessage(), e);
+        }
+        return output;
+    }
 
     @Override
     public void generateSubtile() {
