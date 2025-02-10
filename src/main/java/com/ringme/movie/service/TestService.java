@@ -20,8 +20,6 @@ public interface TestService {
 
     void generateSubtile();
 
-    void generatePlaylistPreview();
-
     void subtitleHandler(VcsMedia media);
 
     void generateSubtileForCms(VcsMediaSubtile subtile, VcsMedia media);
@@ -29,4 +27,6 @@ public interface TestService {
     void standardPlaylistFile();
 
     void standardMediaTime();
+
+    void generateSubtitleFromMkv();
 }

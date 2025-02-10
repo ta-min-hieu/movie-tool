@@ -103,10 +103,10 @@ public class TestController {
         return ResponseEntity.ok().body(new Response(200, "Success"));
     }
 
-    @GetMapping("/generate-playlist-preview")
+    @GetMapping("/generate-subtitle-from-mkv")
     ResponseEntity<?> generatePlaylistPreview() {
         log.info("");
-        service.generatePlaylistPreview();
+        service.generateSubtitleFromMkv();
 
         return ResponseEntity.ok().body(new Response(200, "Success"));
     }
@@ -121,7 +121,7 @@ public class TestController {
 
 
     @GetMapping("/generate-subtile-for-cms")
-    ResponseEntity<?> generateSubtileForcm(@RequestParam int mediaSubtileId) {
+    public ResponseEntity<?> generateSubtileForCms(@RequestParam int mediaSubtileId) {
         log.info("mediaSubtileId|{}", mediaSubtileId);
 
         VcsMediaSubtile subtile = subtileRepository.findById(mediaSubtileId).get();

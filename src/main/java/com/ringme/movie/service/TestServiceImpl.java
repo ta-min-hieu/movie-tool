@@ -3,17 +3,20 @@ package com.ringme.movie.service;
 import com.ringme.movie.common.ExportExcel;
 import com.ringme.movie.common.Helper;
 import com.ringme.movie.config.AppConfig;
+import com.ringme.movie.controller.TestController;
 import com.ringme.movie.dto.Movie;
 import com.ringme.movie.model.VcsMedia;
 import com.ringme.movie.model.VcsMediaCategoryType;
 import com.ringme.movie.model.VcsMediaSubtile;
 import com.ringme.movie.repository.VcsMediaCategoryTypeRepository;
 import com.ringme.movie.repository.VcsMediaRepository;
+import com.ringme.movie.repository.VcsMediaSubtileRepository;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.log4j.Log4j2;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,7 +45,12 @@ public class TestServiceImpl implements TestService {
     @Autowired
     VcsMediaRepository mediaRepository;
     @Autowired
+    VcsMediaSubtileRepository mediaSubtileRepository;
+    @Autowired
     AppConfig appConfig;
+    @Autowired
+    @Lazy
+    TestController controller;
 
     @Override
     public void movieExport(String folderPath, String filePath, String fileName) {
@@ -246,6 +254,7 @@ public class TestServiceImpl implements TestService {
     // lấy ra thông tin stream
     private String executeCommandGetStringByPattern(String command, String regex, String containStr) {
         String output = null;
+        log.info(command);
 
         try {
             ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", command);
@@ -292,8 +301,16 @@ public class TestServiceImpl implements TestService {
     }
 
     @Override
-    public void generatePlaylistPreview() {
+    public void generateSubtitleFromMkv() {
+        List<VcsMedia> list = mediaRepository.getVcsMediaConvertDone();
 
+        for (VcsMedia media : list)
+            generateSubtitleFromMkvHandler(media);
+
+//        VcsMedia media = mediaRepository.getVcsMediaConvertDoneById(204909);
+//        log.info(media);
+
+//        generateSubtitleFromMkvHandler(media);
     }
 
     public static void main(String[] args) {
@@ -582,6 +599,22 @@ public class TestServiceImpl implements TestService {
         return "/media01" + mediaPath.substring(0, lastSlashIndex);
     }
 
+    private String getFolderPathV2(String mediaPath, String firstPath) {
+        if(mediaPath == null || mediaPath.isEmpty()) {
+            log.warn("mediaPath is null or empty");
+            return null;
+        }
+
+        int lastSlashIndex = mediaPath.lastIndexOf('/');
+
+        if (lastSlashIndex == -1) {
+            log.warn("No '/' found in the string.");
+            return null;
+        }
+
+        return firstPath + mediaPath.substring(0, lastSlashIndex);
+    }
+
     private String getFileExtensionBySubtilePath(String subtilePath) {
         int lastDotIndex = subtilePath.lastIndexOf('.');
 
@@ -726,5 +759,76 @@ public class TestServiceImpl implements TestService {
             log.error("ERROR: {}", e.getMessage(), e);
         }
         return 0;
+    }
+
+    private void generateSubtitleFromMkvHandler(VcsMedia media) {
+        try {
+            String folderMkvPath = getFolderPathV2(media.getMediaImage(), "/media");
+            String folderEncodePath = getFolderPath(media.getMediaPath());
+            String srtPath = folderEncodePath + "/subtitle_en.srt";
+
+            log.info("folderMkvPath|{}", folderMkvPath);
+            log.info("folderEncodePath|{}", folderEncodePath);
+
+            Movie movie = new Movie();
+
+            File file = new File(folderMkvPath);
+            if (file.isDirectory()) {
+                String filmName = file.getName();
+                movie.setFilmName(filmName);
+                movie.setCategories(Helper.getListCategoryTypeIdHandler(filmName));
+                directoryHandler(movie, folderMkvPath);
+            } else if (file.isFile())
+                log.warn("is file");
+
+            log.info("movie|{}", movie);
+            String mkvPath = "/media" + movie.getMkv();
+            log.info("mkv path|{}", mkvPath);
+
+            String commandInfoMkv = "ffmpeg -i \"" + mkvPath + "\"";
+
+            String stream = executeCommandGetStringByPattern(commandInfoMkv, "Stream #(.*?)(?=\\(eng\\): Subtitle: subrip)", "(eng): Subtitle: subrip");
+            log.info("stream|{}", stream);
+
+            if(stream == null) {
+                log.warn("stream is null");
+                return;
+            }
+
+            String cmdGenerateSubtitleFromMkv = appConfig.getGenerateSubtitleFromMkv()
+                    .replace("{{mkvPath}}", mkvPath)
+                    .replace("{{stream}}", stream)
+                    .replace("{{srtPath}}", srtPath);
+
+            log.info("cmdGenerateSubtitleFromMkv|{}", cmdGenerateSubtitleFromMkv);
+            executeCommand(cmdGenerateSubtitleFromMkv);
+
+            String language = "en";
+
+            VcsMediaSubtile subtile = mediaSubtileRepository.findByMediaIdAndLanguage(media.getId(), language);
+            if(subtile == null)
+                subtile = new VcsMediaSubtile();
+
+            subtile.setLanguage("en");
+            subtile.setName(getVttName(language));
+            subtile.setMediaId(media.getId());
+            subtile.setSubtilePath(srtPath);
+
+            log.info("subtile save|{}", subtile);
+            mediaSubtileRepository.save(subtile);
+
+            controller.generateSubtileForCms(subtile.getId());
+        } catch (Exception e) {
+            log.error("ERROR|{}", e.getMessage(), e);
+        }
+    }
+
+    private String getVttName(String language) {
+        return switch (language) {
+            case "en" -> "English";
+            case "fr" -> "French";
+            case "rn" -> "Burundi";
+            default -> null;
+        };
     }
 }

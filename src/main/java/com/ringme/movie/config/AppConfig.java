@@ -36,4 +36,7 @@ public class AppConfig {
 
     @Value("${get-media-time-in-m3u8}")
     private String getMediaTimeInM3u8;
+
+    @Value("${generate-subtitle-from-mkv}")
+    private String generateSubtitleFromMkv;
 }

@@ -19,6 +19,13 @@ public interface VcsMediaRepository extends JpaRepository<VcsMedia, Integer> {
             nativeQuery = true)
     List<VcsMedia> getVcsMediaConvertDone();
 
+    @Query(value = """
+                select * from vcs_media
+                where belong in ('movie tool', 'movie tool sub') and actived in (9, 12) and id = :id
+                """,
+            nativeQuery = true)
+    VcsMedia getVcsMediaConvertDoneById(@Param("id") Integer id);
+
     @Modifying
     @Query(value = "UPDATE vcs_media SET belong = 'movie tool sub' WHERE id = :id", nativeQuery = true)
     void updateStatusSub(@Param("id") int id);
