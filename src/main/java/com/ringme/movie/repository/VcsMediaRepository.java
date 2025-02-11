@@ -20,6 +20,14 @@ public interface VcsMediaRepository extends JpaRepository<VcsMedia, Integer> {
     List<VcsMedia> getVcsMediaConvertDone();
 
     @Query(value = """
+                select m.* from vcs_media m
+                inner join vcs_media_subtile ms on m.id = ms.media_id
+                where ms.language = "en";
+                """,
+            nativeQuery = true)
+    List<VcsMedia> getVcsMediasHaveSubtitleGenerate();
+
+    @Query(value = """
                 select * from vcs_media
                 where belong in ('movie tool', 'movie tool sub') and actived in (9, 12) and id = :id
                 """,

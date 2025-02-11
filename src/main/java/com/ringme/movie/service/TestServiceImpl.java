@@ -306,11 +306,26 @@ public class TestServiceImpl implements TestService {
 
         for (VcsMedia media : list)
             generateSubtitleFromMkvHandler(media);
+    }
 
+    @Override
+    public void filterErrorSubtitle() {
 //        VcsMedia media = mediaRepository.getVcsMediaConvertDoneById(204909);
 //        log.info(media);
 
-//        generateSubtitleFromMkvHandler(media);
+        List<VcsMedia> list = mediaRepository.getVcsMediasHaveSubtitleGenerate();
+
+        List<Integer> subMediaErrors = new ArrayList<>();
+
+        for (VcsMedia media : list) {
+            int lineNumber = filterErrorSubtitleHandler(media);
+            if(lineNumber < 2500)
+                subMediaErrors.add(media.getId());
+
+            log.info("mediaId|{}|lineNumber|{}", media.getId(), lineNumber);
+        }
+
+        log.info("subMediaErrors|{}", subMediaErrors);
     }
 
     public static void main(String[] args) {
@@ -836,5 +851,22 @@ public class TestServiceImpl implements TestService {
             case "rn" -> "Burundi";
             default -> null;
         };
+    }
+
+    private int filterErrorSubtitleHandler(VcsMedia media) {
+        String folderPath = getFolderPath(media.getMediaPath());
+
+        String filePath = folderPath + "/subtitle_en.srt";
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            int lineCount = 0;
+            while (reader.readLine() != null)
+                lineCount++;
+
+            return lineCount;
+        } catch (Exception e) {
+            log.error("ERROR|{}", e.getMessage(), e);
+        }
+
+        return 0;
     }
 }

@@ -111,6 +111,14 @@ public class TestController {
         return ResponseEntity.ok().body(new Response(200, "Success"));
     }
 
+    @GetMapping("/filter-error-subtitle")
+    ResponseEntity<?> filterErrorSubtitle() {
+        log.info("");
+        service.filterErrorSubtitle();
+
+        return ResponseEntity.ok().body(new Response(200, "Success"));
+    }
+
     @GetMapping("/standard-media-time")
     ResponseEntity<?> standardMediaTime() {
         log.info("");
@@ -118,7 +126,6 @@ public class TestController {
 
         return ResponseEntity.ok().body(new Response(200, "Success"));
     }
-
 
     @GetMapping("/generate-subtile-for-cms")
     public ResponseEntity<?> generateSubtileForCms(@RequestParam int mediaSubtileId) {

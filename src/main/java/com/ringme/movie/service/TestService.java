@@ -29,4 +29,6 @@ public interface TestService {
     void standardMediaTime();
 
     void generateSubtitleFromMkv();
+
+    void filterErrorSubtitle();
 }
