@@ -199,7 +199,7 @@ public class TestServiceImpl implements TestService {
             String connectSub = ",SUBTITLES=\"subs\",VIDEO-RANGE=SDR";
 
             List<String> lines = Files.readAllLines(Paths.get(filePath));
-            boolean lineExists = lines.stream().anyMatch(line -> line.contains(text));
+            boolean lineExists = lines.stream().anyMatch(line -> line.contains(text)) || lines.stream().anyMatch(line -> line.contains(text.replace("AUTOSELECT=NO", "AUTOSELECT=YES")));
             if (!lineExists) {
                 for (int i = 0; i < lines.size(); i++) {
                     if(lines.get(i).equalsIgnoreCase(appConfig.getEditSubProfile240())) {
@@ -516,25 +516,30 @@ public class TestServiceImpl implements TestService {
         String defaultStr;
         String name;
         String subs;
+        String autoSelect;
 
         switch (language) {
             case "en" -> {
                 defaultStr = "YES";
+                autoSelect = "YES";
                 name = "English";
                 subs = "sub/en";
             }
             case "fr" -> {
                 defaultStr = "NO";
+                autoSelect = "NO";
                 name = "French";
                 subs = "sub/fr";
             }
             case "rn" -> {
                 defaultStr = "NO";
+                autoSelect = "NO";
                 name = "Burundi";
                 subs = "sub/rn";
             }
             default -> {
                 defaultStr = null;
+                autoSelect = null;
                 name = null;
                 subs = null;
             }
@@ -548,6 +553,7 @@ public class TestServiceImpl implements TestService {
         return appConfig.getAddSubCmdInM3u8().replace("{{language}}", language)
                 .replace("{{name}}", name)
                 .replace("{{default}}", defaultStr)
+                .replace("{{AUTOSELECT}}", autoSelect)
                 .replace("{{subs}}", subs);
     }
 
