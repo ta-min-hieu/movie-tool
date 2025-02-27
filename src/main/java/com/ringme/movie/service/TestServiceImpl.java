@@ -475,6 +475,30 @@ public class TestServiceImpl implements TestService {
     }
 
     @Override
+    public void standardImageFile() {
+        List<VcsMedia> mediaList = mediaRepository.getVcsMediaConvertDone();
+
+        for(VcsMedia media : mediaList) {
+            String imagePath = media.getMediaImage();
+            if (imagePath.contains("movie-medias")) {
+                String folderPath = getFolderPath(media.getMediaPath());
+                String newImagePath = folderPath + "/" + media.getId() + ".jpg";
+
+                String cmd = "cp \"/media" + media.getMediaImage() + "\" " + newImagePath;
+
+                log.info("cmd|" + cmd);
+                executeCommand(cmd);
+
+                String imagePathSave = newImagePath.replace("/media01", "");
+                media.setMediaImage(imagePathSave);
+
+                log.info("movie save|{}", media);
+                mediaRepository.save(media);
+            }
+        }
+    }
+
+    @Override
     public void standardMediaTime() {
         List<VcsMedia> mediaList = mediaRepository.getVcsMediaConvertDone();
 

@@ -150,4 +150,13 @@ public class TestController {
 
         return ResponseEntity.ok().body(new Response(200, "Success"));
     }
+
+    @GetMapping("/standard-image-file")
+    ResponseEntity<?> standardImageFile() {
+        log.info("vào đây");
+
+        service.standardImageFile();
+
+        return ResponseEntity.ok().body(new Response(200, "Success"));
+    }
 }

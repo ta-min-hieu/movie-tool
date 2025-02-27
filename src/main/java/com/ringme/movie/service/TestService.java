@@ -26,6 +26,8 @@ public interface TestService {
 
     void standardPlaylistFile();
 
+    void standardImageFile();
+
     void standardMediaTime();
 
     void generateSubtitleFromMkv();
