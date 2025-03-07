@@ -559,14 +559,14 @@ public class TestServiceImpl implements TestService {
 
         switch (language) {
             case "en" -> {
-                defaultStr = "YES";
-                autoSelect = "YES";
+                defaultStr = "NO";
+                autoSelect = "NO";
                 name = "English";
                 subs = "sub/en";
             }
             case "fr" -> {
-                defaultStr = "NO";
-                autoSelect = "NO";
+                defaultStr = "YES";
+                autoSelect = "YES";
                 name = "French";
                 subs = "sub/fr";
             }
