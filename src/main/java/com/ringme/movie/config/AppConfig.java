@@ -39,4 +39,13 @@ public class AppConfig {
 
     @Value("${generate-subtitle-from-mkv}")
     private String generateSubtitleFromMkv;
+
+    @Value("${generate-subtitle-ass-from-mkv}")
+    private String generateSubtitleAssFromMkv;
+
+    @Value("${get-duration-from-mkv-file}")
+    private String getDurationFromMkvFile;
+
+    @Value("${convert-cdn.api.url}")
+    private String apiConvertCdn;
 }

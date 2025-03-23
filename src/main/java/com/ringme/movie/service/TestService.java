@@ -8,6 +8,8 @@ import org.springframework.web.multipart.MultipartFile;
 public interface TestService {
     void movieExport(String folderPath, String filePath, String fileName);
 
+    void addMovieByFolder(String folderPath, Long episodeParent);
+
     void storeMedia(MultipartFile excelFile);
 
     void getMoviePreview(HttpServletResponse response, String folderPath);

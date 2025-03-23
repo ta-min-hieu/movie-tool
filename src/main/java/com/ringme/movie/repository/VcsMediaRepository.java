@@ -42,4 +42,8 @@ public interface VcsMediaRepository extends JpaRepository<VcsMedia, Integer> {
     @Query(value = "UPDATE vcs_media SET media_time = :media_time WHERE id = :id", nativeQuery = true)
     void updateMediaTimeById(@Param("id") int id,
                              @Param("media_time") int mediaTime);
+
+    @Modifying
+    @Query(value = "UPDATE vcs_media SET actived = :status WHERE id = :id", nativeQuery = true)
+    void updateStatus(@Param("id") int id, @Param("status") int status);
 }

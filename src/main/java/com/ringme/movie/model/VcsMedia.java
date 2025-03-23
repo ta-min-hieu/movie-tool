@@ -82,7 +82,7 @@ public class VcsMedia implements Serializable {
     @Column(name = "is_episode")
     private Integer isEpisode;
     @Column(name = "episode_parent")
-    private Integer episodeParent;
+    private Long episodeParent;
     @Column(name = "episode_number")
     private Integer episodeNumber;
     @Column(name = "director_id")

@@ -5,6 +5,7 @@ import com.ringme.movie.common.Helper;
 import com.ringme.movie.config.AppConfig;
 import com.ringme.movie.controller.TestController;
 import com.ringme.movie.dto.Movie;
+import com.ringme.movie.enums.MovieStatus;
 import com.ringme.movie.model.VcsMedia;
 import com.ringme.movie.model.VcsMediaCategoryType;
 import com.ringme.movie.model.VcsMediaSubtile;
@@ -17,8 +18,10 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
@@ -36,7 +39,6 @@ import java.util.stream.Collectors;
 
 @Service
 @Log4j2
-@Transactional
 public class TestServiceImpl implements TestService {
     @Autowired
     ExportExcel export;
@@ -51,6 +53,8 @@ public class TestServiceImpl implements TestService {
     @Autowired
     @Lazy
     TestController controller;
+    @Autowired
+    RestTemplate restTemplate;
 
     @Override
     public void movieExport(String folderPath, String filePath, String fileName) {
@@ -65,7 +69,72 @@ public class TestServiceImpl implements TestService {
     }
 
     @Override
-//    @Transactional(readOnly = true)
+    public void addMovieByFolder(String folderPath, Long episodeParent) {
+        List<Movie> list = listFilesAndFolders(folderPath);
+        log.info("list movie: {}", list);
+
+        if(list != null && !list.isEmpty()) {
+            for(Movie m : list) {
+                VcsMedia media = saveMovie(m, episodeParent);
+                generateSubtitleAssFromMkvHandler(media, "eng");
+                generateSubtitleAssFromMkvHandler(media, "fre");
+
+                callApiToConvertHandler(media, appConfig.getApiConvertCdn() + media.getId());
+            }
+        }
+    }
+
+    private VcsMedia saveMovie(Movie m, Long episodeParent) {
+        VcsMedia media = new VcsMedia();
+
+        media.setMediaTitle(m.getFilmName());
+        media.setMediaPath(m.getMkv().replace("/media", ""));
+        media.setCateId(1);
+        media.setActived(1);
+        media.setMediaTime(executeCommandAndGetDuration(appConfig.getGetDurationFromMkvFile().replace("{{filePath}}", m.getMkv())));
+
+        if(episodeParent == null)
+            media.setIsEpisode(0);
+        else {
+            media.setEpisodeParent(episodeParent);
+            media.setIsEpisode(2);
+        }
+
+        media.setBelong("movie tool anime");
+
+        log.info("movie save: {}", media);
+        mediaRepository.save(media);
+
+        return media;
+    }
+
+    private void callApiToConvertHandler(VcsMedia dto, String apiEndpoint) {
+        int movieId = dto.getId();
+
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(apiEndpoint, null, String.class);
+
+            if (response.getStatusCode() == HttpStatus.OK)
+                log.info("Call api convert movie successful, id: {}, dto: {}", movieId, dto);
+            else {
+                log.error("Call api convert movie failed, id: {}, dto: {}", movieId, dto);
+                updateStatus(movieId, MovieStatus.CONVERT_ERROR.getCode());
+            }
+        } catch (Exception e) {
+            log.error("id: {}, dto: {}, ERROR: {}", movieId, dto, e.getMessage(), e);
+            updateStatus(movieId, MovieStatus.CONVERT_ERROR.getCode());
+        }
+    }
+
+    private void updateStatus(int id, int status) {
+        try {
+            mediaRepository.updateStatus(id, status);
+        } catch (Exception e) {
+            log.error("ERROR|" + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public void storeMedia(MultipartFile excelFile) {
         try (InputStream inputStream = excelFile.getInputStream();
              Workbook workbook = WorkbookFactory.create(inputStream)) {
@@ -240,7 +309,7 @@ public class TestServiceImpl implements TestService {
             int exitCode = process.waitFor();
 
             if (exitCode != 0) {
-                log.info("exit code|{}", exitCode);
+                log.info("exit code: {}, command: {}", exitCode, command);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 String line;
                 while ((line = reader.readLine()) != null)
@@ -281,10 +350,14 @@ public class TestServiceImpl implements TestService {
             }
 
             int exitCode = process.waitFor();
-            if (exitCode != 0)
-                log.info("Command exited with code: {}", exitCode);
+            if (exitCode != 0) {
+                log.info("Command exited with code: {}, command: {}, regex: {}, containStr: {}", exitCode, command, regex, containStr);
+            }
 
             log.info("Command output: {}", output);
+            if(output == null || output.isEmpty())
+                log.info("output is null with code: {}, command: {}, regex: {}, containStr: {}", exitCode, command, regex, containStr);
+
             return output;
         } catch (Exception e) {
             log.error("ERROR: {}", e.getMessage(), e);
@@ -326,14 +399,6 @@ public class TestServiceImpl implements TestService {
         }
 
         log.info("subMediaErrors|{}", subMediaErrors);
-    }
-
-    public static void main(String[] args) {
-//        String removeText = "#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subs\",NAME=\"English\",DEFAULT=YES,AUTOSELECT=YES,FORCED=NO,LANGUAGE=\"en\",URI=\"subs/index.m3u8\"";
-//        String filePath = "D:\\lam-java\\file-test\\hieutm\\playlist2.m3u8";
-//        testXoaInFile(filePath, removeText);
-
-//        createPreviewFile("D:\\\\lam-java\\\\file-test\\\\hieutm\\\\playlist2.m3u8", "D:\\\\lam-java\\\\file-test\\\\hieutm\\\\playlist2.m3u8", "123");
     }
 
     private void createPreviewFile(String filePath, String filePathCreate, String movieId) {
@@ -709,8 +774,11 @@ public class TestServiceImpl implements TestService {
                     movie.setFilmName(filmName);
                     movie.setCategories(Helper.getListCategoryTypeIdHandler(filmName));
                     directoryHandler(movie, directoryPath + "/" + file.getName());
-                } else if (file.isFile())
+                } else if (file.isFile()) {
                     log.warn("is file");
+                    movie.setFilmName(file.getName());
+                    movie.setMkv(directoryPath + "/" + file.getName());
+                }
 
                 movies.add(movie);
             }
@@ -795,7 +863,7 @@ public class TestServiceImpl implements TestService {
 
             int exitCode = process.waitFor();
             if (exitCode != 0)
-                log.info("Command exited with code: {}", exitCode);
+                log.info("Command exited with code: {}, command: {}", exitCode, command);
 
             String duration = output.toString();
             log.info("Command duration output: {}", duration);
@@ -804,6 +872,51 @@ public class TestServiceImpl implements TestService {
             log.error("ERROR: {}", e.getMessage(), e);
         }
         return 0;
+    }
+
+    private void generateSubtitleAssFromMkvHandler(VcsMedia media, String lang) {
+        try {
+            String mkvPath = "/media" + media.getMediaPath();
+            String subtitlePath = mkvPath.replace(".mkv", ".vtt");
+
+            String commandInfoMkv = "ffmpeg -i \"" + mkvPath + "\"";
+
+            String stream = executeCommandGetStringByPattern(commandInfoMkv, "Stream #(.*?)(?=\\({{lang}}\\): Subtitle: ass)".replace("{{lang}}", lang), "({{lang}}): Subtitle: ass".replace("{{lang}}", lang));
+            log.info("stream|{}", stream);
+
+            if(stream == null || stream.isEmpty()) {
+                log.warn("stream is null");
+                return;
+            }
+
+            String cmdGenerateSubtitleFromMkv = appConfig.getGenerateSubtitleAssFromMkv()
+                    .replace("{{mkvPath}}", mkvPath)
+                    .replace("{{stream}}", stream)
+                    .replace("{{subtitlePath}}", subtitlePath);
+
+            log.info("cmdGenerateSubtitleFromMkv|{}", cmdGenerateSubtitleFromMkv);
+            executeCommand(cmdGenerateSubtitleFromMkv);
+
+            VcsMediaSubtile subtile = mediaSubtileRepository.findByMediaIdAndLanguage(media.getId(), lang);
+            if(subtile == null)
+                subtile = new VcsMediaSubtile();
+
+            String language = "en";
+            if(lang == null || lang.equals("eng")) {
+                language = "en";
+            } else if(lang.equals("fre"))
+                language = "fr";
+
+            subtile.setLanguage(language);
+            subtile.setName(getVttName(language));
+            subtile.setMediaId(media.getId());
+            subtile.setSubtilePath(subtitlePath);
+
+            log.info("subtile save|{}", subtile);
+            mediaSubtileRepository.save(subtile);
+        } catch (Exception e) {
+            log.error("ERROR|{}", e.getMessage(), e);
+        }
     }
 
     private void generateSubtitleFromMkvHandler(VcsMedia media) {
