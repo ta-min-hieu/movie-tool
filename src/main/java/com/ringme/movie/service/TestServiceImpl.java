@@ -877,7 +877,7 @@ public class TestServiceImpl implements TestService {
     private void generateSubtitleAssFromMkvHandler(VcsMedia media, String lang) {
         try {
             String mkvPath = "/media" + media.getMediaPath();
-            String subtitlePath = mkvPath.replace(".mkv", ".vtt");
+            String subtitlePath = mkvPath.replace(".mkv", lang + ".vtt");
 
             String commandInfoMkv = "ffmpeg -i \"" + mkvPath + "\"";
 
@@ -902,9 +902,9 @@ public class TestServiceImpl implements TestService {
                 subtile = new VcsMediaSubtile();
 
             String language = "en";
-            if(lang == null || lang.equals("eng")) {
+            if(lang == null || lang.equals("eng"))
                 language = "en";
-            } else if(lang.equals("fre"))
+            else if(lang.equals("fre"))
                 language = "fr";
 
             subtile.setLanguage(language);
