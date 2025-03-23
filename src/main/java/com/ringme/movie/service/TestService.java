@@ -10,6 +10,8 @@ public interface TestService {
 
     void addMovieByFolder(String folderPath, Long episodeParent);
 
+    void generateSubtitleFromMkvPath(String folderPath);
+
     void storeMedia(MultipartFile excelFile);
 
     void getMoviePreview(HttpServletResponse response, String folderPath);

@@ -26,4 +26,13 @@ public class ToolController {
 
         return ResponseEntity.ok().body(new Response(200, "Success"));
     }
+
+    @GetMapping("/generate-subtitle-from-mkv-path")
+    ResponseEntity<?> generateSubtitleFromMkvPath(@RequestParam String folderPath) {
+        log.info("folderPath: {}", folderPath);
+
+        service.generateSubtitleFromMkvPath(folderPath);
+
+        return ResponseEntity.ok().body(new Response(200, "Success"));
+    }
 }

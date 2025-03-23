@@ -84,6 +84,19 @@ public class TestServiceImpl implements TestService {
         }
     }
 
+    @Override
+    public void generateSubtitleFromMkvPath(String folderPath) {
+        List<Movie> list = listFilesAndFolders(folderPath);
+        log.info("list movie: {}", list);
+
+        if(list != null && !list.isEmpty()) {
+            for(Movie m : list) {
+                generateSubtitleAssFromMkvPath(m.getMkv(), "eng");
+                generateSubtitleAssFromMkvPath(m.getMkv(), "fre");
+            }
+        }
+    }
+
     private VcsMedia saveMovie(Movie m, Long episodeParent) {
         VcsMedia media = new VcsMedia();
 
@@ -914,6 +927,32 @@ public class TestServiceImpl implements TestService {
 
             log.info("subtile save|{}", subtile);
             mediaSubtileRepository.save(subtile);
+        } catch (Exception e) {
+            log.error("ERROR|{}", e.getMessage(), e);
+        }
+    }
+
+    private void generateSubtitleAssFromMkvPath(String mkvPath, String lang) {
+        try {
+            String subtitlePath = mkvPath.replace(".mkv", lang + ".vtt");
+
+            String commandInfoMkv = "ffmpeg -i \"" + mkvPath + "\"";
+
+            String stream = executeCommandGetStringByPattern(commandInfoMkv, "Stream #(.*?)(?=\\({{lang}}\\): Subtitle: ass)".replace("{{lang}}", lang), "({{lang}}): Subtitle: ass".replace("{{lang}}", lang));
+            log.info("stream|{}", stream);
+
+            if(stream == null || stream.isEmpty()) {
+                log.warn("stream is null");
+                return;
+            }
+
+            String cmdGenerateSubtitleFromMkv = appConfig.getGenerateSubtitleAssFromMkv()
+                    .replace("{{mkvPath}}", mkvPath)
+                    .replace("{{stream}}", stream)
+                    .replace("{{subtitlePath}}", subtitlePath);
+
+            log.info("cmdGenerateSubtitleFromMkv|{}", cmdGenerateSubtitleFromMkv);
+            executeCommand(cmdGenerateSubtitleFromMkv);
         } catch (Exception e) {
             log.error("ERROR|{}", e.getMessage(), e);
         }
