@@ -6,6 +6,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface TestService {
+    void callApiConvertFileInFolder(String folderPath);
+
+    void standardFileName(String folderPath);
+
     void movieExport(String folderPath, String filePath, String fileName);
 
     void addMovieByFolder(String folderPath, Long episodeParent);

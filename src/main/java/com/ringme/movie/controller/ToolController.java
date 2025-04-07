@@ -17,21 +17,20 @@ public class ToolController {
     @Autowired
     TestService service;
 
-    @GetMapping("/add-movie-by-folder")
-    ResponseEntity<?> addMovieByFolder(@RequestParam String folderPath,
-                                       @RequestParam(required = false) Long episodeParent) {
-        log.info("folderPath: {}, episodeParent: {}", folderPath, episodeParent);
+    @GetMapping("/standard-file-name")
+    ResponseEntity<?> standardFileName(@RequestParam String folderPath) {
+        log.info("folderPath: {}", folderPath);
 
-        service.addMovieByFolder(folderPath, episodeParent);
+        service.standardFileName(folderPath);
 
         return ResponseEntity.ok().body(new Response(200, "Success"));
     }
 
-    @GetMapping("/generate-subtitle-from-mkv-path")
-    ResponseEntity<?> generateSubtitleFromMkvPath(@RequestParam String folderPath) {
+    @GetMapping("/call-api-convert-in-folder")
+    ResponseEntity<?> callApiConvertInFolder(@RequestParam String folderPath) {
         log.info("folderPath: {}", folderPath);
 
-        service.generateSubtitleFromMkvPath(folderPath);
+        service.callApiConvertFileInFolder(folderPath);
 
         return ResponseEntity.ok().body(new Response(200, "Success"));
     }

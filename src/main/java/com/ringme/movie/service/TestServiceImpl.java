@@ -57,6 +57,16 @@ public class TestServiceImpl implements TestService {
     RestTemplate restTemplate;
 
     @Override
+    public void callApiConvertFileInFolder(String folderPath) {
+
+    }
+
+    @Override
+    public void standardFileName(String folderPath) {
+
+    }
+
+    @Override
     public void movieExport(String folderPath, String filePath, String fileName) {
         if(fileName == null || fileName.isEmpty())
             fileName = Helper.generateRandomString(32);
@@ -799,6 +809,39 @@ public class TestServiceImpl implements TestService {
             log.warn("Directory does not exist or is not a directory.");
 
         return movies;
+    }
+
+    private void renameFileName(String directoryPath) {
+        log.info("directoryPath|{}", directoryPath);
+        File directory = new File(directoryPath);
+        if (directory.exists() && directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            if(files == null) {
+                log.warn("files is null");
+                return;
+            }
+
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    String fileName = file.getName();
+                    String newFileName = standardFileNameHandler(fileName);
+
+                    String directFileName = directoryPath + "/" + fileName;
+                    String directNewFileName = directoryPath + "/" + newFileName;
+                    String cmd = "mv '{{fileName}}' '{{newFileName}}'"
+                            .replace("{{fileName}}", directFileName)
+                            .replace("{{newFileName}}", directNewFileName);
+                    executeCommand(cmd);
+                }
+            }
+        } else
+            log.warn("Directory does not exist or is not a directory.");
+    }
+
+    private String standardFileNameHandler(String fileName) {
+        return fileName.replace(" ", "-")
+                .replace("[", "")
+                .replace("]", "");
     }
 
     private void directoryHandler(Movie movie, String directoryPath) {
