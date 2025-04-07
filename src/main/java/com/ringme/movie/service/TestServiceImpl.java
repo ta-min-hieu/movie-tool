@@ -578,7 +578,7 @@ public class TestServiceImpl implements TestService {
 
     @Override
     public void standardMediaTime() {
-        List<VcsMedia> mediaList = mediaRepository.getVcsMediaConvertDone();
+        List<VcsMedia> mediaList = mediaRepository.getVcsMediaAnimeConvertDone();
 
         for(VcsMedia media : mediaList) {
             int duration = executeCommandAndGetDuration(appConfig.getGetMediaTimeInM3u8().replace("{{mediaPath}}", "/media01" + media.getMediaPath()));
