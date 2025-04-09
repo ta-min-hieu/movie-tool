@@ -7,9 +7,6 @@ import org.springframework.context.annotation.Configuration;
 @Getter
 @Configuration
 public class AppConfig {
-    @Value("${base.path.cdn}")
-    private String basePathCdn;
-
     @Value("${base-url}")
     private String baseUrl;
 
@@ -48,4 +45,7 @@ public class AppConfig {
 
     @Value("${convert-cdn.api.url}")
     private String apiConvertCdn;
+
+    @Value("${app.media.output.root}")
+    private String appMediaOutputRoot;
 }

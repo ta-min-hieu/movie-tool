@@ -496,8 +496,8 @@ public class TestServiceImpl implements TestService {
         }
 
         String folderPath = getFolderPath(mediaPath);
-        String subtitlePath = "/media" + subtilePath;
-        String fileM3u8Path = "/media01" + mediaPath;
+        String subtitlePath = appConfig.getAppMediaOutputRoot() + subtilePath;
+        String fileM3u8Path = appConfig.getAppMediaOutputRoot() + mediaPath;
 
         generateSubtitleHandler(folderPath, subtitlePath, fileM3u8Path, "en");
 
@@ -530,7 +530,7 @@ public class TestServiceImpl implements TestService {
         }
 
         String folderPath = getFolderPath(mediaPath);
-        String fileM3u8Path = "/media01" + mediaPath;
+        String fileM3u8Path = appConfig.getAppMediaOutputRoot() + mediaPath;
 
         generateSubtitleHandler(folderPath, subtilePath, fileM3u8Path, subtile.getLanguage());
     }
@@ -541,7 +541,7 @@ public class TestServiceImpl implements TestService {
         String removeText = "#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subs\",NAME=\"English\",DEFAULT=YES,AUTOSELECT=YES,FORCED=NO,LANGUAGE=\"en\",URI=\"subs/index.m3u8\"";
 
         for(VcsMedia media : mediaList) {
-            String filePath = "/media01" + media.getMediaPath();
+            String filePath = appConfig.getAppMediaOutputRoot() + media.getMediaPath();
 
             testXoaInFile(filePath, removeText);
 
@@ -562,12 +562,12 @@ public class TestServiceImpl implements TestService {
                 String folderPath = getFolderPath(media.getMediaPath());
                 String newImagePath = folderPath + "/" + media.getId() + ".jpg";
 
-                String cmd = "cp \"/media" + media.getMediaImage() + "\" " + newImagePath;
+                String cmd = "cp \"" + appConfig.getAppMediaOutputRoot() + media.getMediaImage() + "\" " + newImagePath;
 
                 log.info("cmd|" + cmd);
                 executeCommand(cmd);
 
-                String imagePathSave = newImagePath.replace("/media01", "");
+                String imagePathSave = newImagePath.replace(appConfig.getAppMediaOutputRoot(), "");
                 media.setMediaImage(imagePathSave);
 
                 log.info("movie save|{}", media);
@@ -581,7 +581,7 @@ public class TestServiceImpl implements TestService {
         List<VcsMedia> mediaList = mediaRepository.getVcsMediaAnimeConvertDone();
 
         for(VcsMedia media : mediaList) {
-            int duration = executeCommandAndGetDuration(appConfig.getGetMediaTimeInM3u8().replace("{{mediaPath}}", "/media01" + media.getMediaPath()));
+            int duration = executeCommandAndGetDuration(appConfig.getGetMediaTimeInM3u8().replace("{{mediaPath}}", appConfig.getAppMediaOutputRoot() + media.getMediaPath()));
             int mediaId = media.getId();
             log.info("mediaId|{}|duration|{}", mediaId, duration);
             mediaRepository.updateMediaTimeById(media.getId(), duration);
@@ -618,7 +618,7 @@ public class TestServiceImpl implements TestService {
             }
 
             addTextIntoFile(fileM3u8Path, text);
-            addTextIntoFile(fileM3u8Path.replace("playlist.m3u8", "playlist_preview.m3u8"), text);
+//            addTextIntoFile(fileM3u8Path.replace("playlist.m3u8", "playlist_preview.m3u8"), text);
 
             log.info("success");
         } catch (Exception e) {
@@ -642,17 +642,17 @@ public class TestServiceImpl implements TestService {
                 name = "English";
                 subs = "sub/en";
             }
-            case "fr" -> {
+            case "my" -> {
                 defaultStr = "YES";
                 autoSelect = "YES";
-                name = "French";
-                subs = "sub/fr";
+                name = "Myanmar";
+                subs = "sub/my";
             }
-            case "rn" -> {
+            case "ca" -> {
                 defaultStr = "NO";
                 autoSelect = "NO";
-                name = "Burundi";
-                subs = "sub/rn";
+                name = "Khmer";
+                subs = "sub/ca";
             }
             default -> {
                 defaultStr = null;
@@ -696,10 +696,10 @@ public class TestServiceImpl implements TestService {
             return null;
         else if(language.equalsIgnoreCase("en"))
             return "sub/en";
-        else if(language.equalsIgnoreCase("fr"))
-            return "sub/fr";
-        else if(language.equalsIgnoreCase("rn"))
-            return "sub/rn";
+        else if(language.equalsIgnoreCase("my"))
+            return "sub/my";
+        else if(language.equalsIgnoreCase("ca"))
+            return "sub/ca";
         else {
             log.error("language is not supported|{}", language);
             return null;
@@ -719,7 +719,7 @@ public class TestServiceImpl implements TestService {
             return null;
         }
 
-        return "/media01" + mediaPath.substring(0, lastSlashIndex);
+        return appConfig.getAppMediaOutputRoot() + mediaPath.substring(0, lastSlashIndex);
     }
 
     private String getFolderPathV2(String mediaPath, String firstPath) {
@@ -889,7 +889,7 @@ public class TestServiceImpl implements TestService {
 
     private void generateSubtitleAssFromMkvHandler(VcsMedia media, String lang) {
         try {
-            String mkvPath = "/media" + media.getMediaPath();
+            String mkvPath = appConfig.getAppMediaOutputRoot() + media.getMediaPath();
             String subtitlePath = mkvPath.replace(".mkv", lang + ".vtt");
 
             String commandInfoMkv = "ffmpeg -i \"" + mkvPath + "\"";
@@ -915,10 +915,12 @@ public class TestServiceImpl implements TestService {
                 subtile = new VcsMediaSubtile();
 
             String language = "en";
-            if(lang == null || lang.equals("eng"))
+            if(lang == null || lang.equals("en"))
                 language = "en";
-            else if(lang.equals("fre"))
-                language = "fr";
+            else if(lang.equals("my"))
+                language = "my";
+            else if(lang.equals("ca"))
+                language = "ca";
 
             subtile.setLanguage(language);
             subtile.setName(getVttName(language));
@@ -960,7 +962,7 @@ public class TestServiceImpl implements TestService {
 
     private void generateSubtitleFromMkvHandler(VcsMedia media) {
         try {
-            String folderMkvPath = getFolderPathV2(media.getMediaImage(), "/media");
+            String folderMkvPath = getFolderPathV2(media.getMediaImage(), appConfig.getAppMediaOutputRoot());
             String folderEncodePath = getFolderPath(media.getMediaPath());
             String srtPath = folderEncodePath + "/subtitle_en.srt";
 
@@ -979,7 +981,7 @@ public class TestServiceImpl implements TestService {
                 log.warn("is file");
 
             log.info("movie|{}", movie);
-            String mkvPath = "/media" + movie.getMkv();
+            String mkvPath = appConfig.getAppMediaOutputRoot() + movie.getMkv();
             log.info("mkv path|{}", mkvPath);
 
             String commandInfoMkv = "ffmpeg -i \"" + mkvPath + "\"";
@@ -1022,9 +1024,9 @@ public class TestServiceImpl implements TestService {
 
     private String getVttName(String language) {
         return switch (language) {
-            case "en" -> "English";
-            case "fr" -> "French";
-            case "rn" -> "Burundi";
+            case "en" -> "en";
+            case "my" -> "my";
+            case "ca" -> "ca";
             default -> null;
         };
     }
