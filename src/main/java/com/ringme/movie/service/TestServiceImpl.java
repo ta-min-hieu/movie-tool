@@ -280,7 +280,7 @@ public class TestServiceImpl implements TestService {
         try {
             filePath = "/u01/run/data" + filePath;
             String connectSub = ",SUBTITLES=\"subs\",VIDEO-RANGE=SDR";
-
+            log.info(filePath);
             List<String> lines = Files.readAllLines(Paths.get(filePath));
             boolean lineExists = lines.stream().anyMatch(line -> line.contains(text)) || lines.stream().anyMatch(line -> line.contains(text.replace("AUTOSELECT=NO", "AUTOSELECT=YES")));
             if (!lineExists) {
@@ -612,13 +612,13 @@ public class TestServiceImpl implements TestService {
             log.info("cmd|{}", cmd);
 
             executeCommand(cmd);
-
+            log.info("execute success");
             String text = addSubCmdInM3u8Handler(language);
             if(text == null || text.isEmpty()) {
                 log.error("text is null or empty");
                 return;
             }
-
+            log.info("CB add text to file");
             addTextIntoFile(fileM3u8Path, text);
 //            addTextIntoFile(fileM3u8Path.replace("playlist.m3u8", "playlist_preview.m3u8"), text);
 
