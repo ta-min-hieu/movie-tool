@@ -591,6 +591,7 @@ public class TestServiceImpl implements TestService {
 
     private void generateSubtitleHandler(String folderPath, String subtitlePath, String fileM3u8Path, String language) {
         try {
+            folderPath = "/u01/run/data" + folderPath;
             log.info("folderPath|{}|subtitlePath|{}|fileM3u8Path|{}", folderPath, subtitlePath, fileM3u8Path);
 
             String subs = getFileNameSubs(language);
