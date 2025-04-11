@@ -278,6 +278,7 @@ public class TestServiceImpl implements TestService {
     @Override
     public void addTextIntoFile(String filePath, String text) {
         try {
+            filePath = "/u01/run/data" + filePath;
             String connectSub = ",SUBTITLES=\"subs\",VIDEO-RANGE=SDR";
 
             List<String> lines = Files.readAllLines(Paths.get(filePath));

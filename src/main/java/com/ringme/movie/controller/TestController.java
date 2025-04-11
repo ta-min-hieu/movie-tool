@@ -137,6 +137,10 @@ public class TestController {
         VcsMedia media = mediaRepository.findById(subtile.getMediaId()).get();
         log.info("media|{}", media);
 
+        if(media == null || (media.getActived() != 9 && media.getActived() != 12 && media.getActived() != 3)) {
+            log.error("actived {} invalid", media.getActived());
+            return ResponseEntity.ok().body(new Response(400, "actived {} invalid", media.getActived()));
+        }
         service.generateSubtileForCms(subtile, media);
 
         return ResponseEntity.ok().body(new Response(200, "Success"));
