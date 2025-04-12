@@ -33,6 +33,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -315,22 +318,45 @@ public class TestServiceImpl implements TestService {
 
     @Override
     public void executeCommand(String command) {
+        Process process = null;
         try {
             ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", command);
-            processBuilder.redirectErrorStream(true);
-            Process process = processBuilder.start();
+            processBuilder.redirectErrorStream(true); // Gộp stderr vào stdout
+            process = processBuilder.start();
+
+            // Đọc output không bị block
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            Process finalProcess = process;
+            Future<?> future = executor.submit(() -> {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(finalProcess.getInputStream()))) {
+                    String line;
+                    int count = 0;
+                    while ((line = reader.readLine()) != null) {
+//                        log.info("[CMD] {}", line);
+                        count++;
+                    }
+                    log.info("Number line: {}", count);
+                } catch (IOException e) {
+                    log.error("Error reading command output", e);
+                }
+            });
 
             int exitCode = process.waitFor();
+            future.get(); // Đợi đọc log xong
+            executor.shutdown();
 
-            if (exitCode != 0) {
-                log.info("exit code: {}, command: {}", exitCode, command);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
-                while ((line = reader.readLine()) != null)
-                    log.info(line);
-            }
+            log.info("Command finished with exit code {}", exitCode);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Khôi phục trạng thái interrupt
+            log.error("Command execution was interrupted: {}", command, e);
         } catch (Exception e) {
-            log.error("ERROR|{}", e.getMessage(), e);
+            log.error("ERROR executing command: {}", command, e);
+        } finally {
+            if (process != null) {
+                process.destroy();
+            }
         }
     }
 
@@ -626,6 +652,26 @@ public class TestServiceImpl implements TestService {
         } catch (Exception e) {
             log.error("ERROR|{}", e.getMessage(), e);
         }
+    }
+
+    private void executeCommandV2(String command) {
+        StringBuffer output = new StringBuffer();
+
+        Process p;
+        try {
+            p = Runtime.getRuntime().exec(command);
+            p.waitFor();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line + "\n");
+            }
+        } catch (Exception e) {
+            log.error("Error: {}", e.getMessage(), e);
+        }
+
+        log.info(output.toString());
     }
 
     private String addSubCmdInM3u8Handler(String language) {
