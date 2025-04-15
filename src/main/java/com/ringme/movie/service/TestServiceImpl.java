@@ -281,7 +281,7 @@ public class TestServiceImpl implements TestService {
     @Override
     public void addTextIntoFile(String filePath, String text) {
         try {
-            filePath = "/u01/run/data" + filePath;
+            filePath = "/u02/media02" + filePath;
             String connectSub = ",SUBTITLES=\"subs\",VIDEO-RANGE=SDR";
             log.info(filePath);
             List<String> lines = Files.readAllLines(Paths.get(filePath));
@@ -617,7 +617,7 @@ public class TestServiceImpl implements TestService {
 
     private void generateSubtitleHandler(String folderPath, String subtitlePath, String fileM3u8Path, String language) {
         try {
-            folderPath = "/u01/run/data" + folderPath;
+            folderPath = "/u02/media02" + folderPath;
             log.info("folderPath|{}|subtitlePath|{}|fileM3u8Path|{}", folderPath, subtitlePath, fileM3u8Path);
 
             String subs = getFileNameSubs(language);
