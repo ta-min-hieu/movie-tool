@@ -63,6 +63,7 @@ public final class ToolServiceImpl implements ToolService {
                 obj.setActived(MovieStatus.WAITING_TO_CONVERT.getCode());
                 obj.setCateId(1);
                 obj.setProductionTime("2001-06-05");
+                obj.setIsEpisode(2);
 
                 for (Cell cell : row) {
                     String cellValue = Helper.getCellValue(cell);
