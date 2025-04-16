@@ -46,6 +46,8 @@ public final class ToolServiceImpl implements ToolService {
         try (InputStream inputStream = file.getInputStream();
              Workbook workbook = WorkbookFactory.create(inputStream)) {
 
+            VcsMedia mediaP = mediaRepository.findById(Integer.parseInt(String.valueOf(episodeParent))).get();
+
             Sheet sheet = workbook.getSheetAt(0); // Lấy sheet đầu tiên
             boolean skipHeader = true;
             for (Row row : sheet) {
@@ -64,6 +66,7 @@ public final class ToolServiceImpl implements ToolService {
                 obj.setCateId(1);
                 obj.setProductionTime("2001-06-05");
                 obj.setIsEpisode(2);
+                obj.setMediaImage(mediaP.getMediaImage());
 
                 for (Cell cell : row) {
                     String cellValue = Helper.getCellValue(cell);
@@ -154,7 +157,10 @@ public final class ToolServiceImpl implements ToolService {
                     case 0 -> obj.setEpisodeNumber(Integer.valueOf(cellValue.replace(".0", "")));
                     case 1 -> obj.setMediaTitle(cellValue);
                     case 2 -> obj.setMediaDesc(cellValue);
-                    case 3 -> obj.setMediaImage(cellValue);
+                    case 3 -> {
+                        if(!cellValue.equals("null"))
+                            obj.setMediaImage(cellValue);
+                    }
                     case 4 -> obj.setMediaPath(cellValue);
                     case 5 -> subtitles.put("en", cellValue);
                     case 6 -> subtitles.put("my", cellValue);
