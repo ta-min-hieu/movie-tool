@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.List;
 
 @Repository
@@ -52,4 +53,8 @@ public interface VcsMediaRepository extends JpaRepository<VcsMedia, Integer> {
     @Modifying
     @Query(value = "UPDATE vcs_media SET actived = :status WHERE id = :id", nativeQuery = true)
     void updateStatus(@Param("id") int id, @Param("status") int status);
+
+    @Modifying
+    @Query(value = "UPDATE vcs_media SET actived = :status, approved_at = :approved_at WHERE id = :id", nativeQuery = true)
+    void updateStatus(@Param("id") int id, @Param("status") int status, @Param("approved_at") Date approvedAt);
 }

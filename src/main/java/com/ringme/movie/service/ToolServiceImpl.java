@@ -1,6 +1,7 @@
 package com.ringme.movie.service;
 
 import com.ringme.movie.common.Helper;
+import com.ringme.movie.config.AppConfig;
 import com.ringme.movie.enums.MovieStatus;
 import com.ringme.movie.model.VcsMedia;
 import com.ringme.movie.model.VcsMediaSubtile;
@@ -9,10 +10,16 @@ import com.ringme.movie.repository.VcsMediaSubtileRepository;
 import lombok.extern.log4j.Log4j2;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.InputStream;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,6 +35,11 @@ public final class ToolServiceImpl implements ToolService {
     VcsMediaRepository mediaRepository;
     @Autowired
     VcsMediaSubtileRepository subtileRepository;
+
+    @Autowired
+    AppConfig appConfig;
+    @Autowired
+    RestTemplate restTemplate;
 
     @Override
     public void saveMovieByExcelFile(Long episodeParent, MultipartFile file) {
@@ -48,7 +60,7 @@ public final class ToolServiceImpl implements ToolService {
                 int count = 0;
                 VcsMedia obj = new VcsMedia();
                 obj.setEpisodeParent(episodeParent);
-                obj.setActived(MovieStatus.CONVERT_ERROR.getCode());
+                obj.setActived(MovieStatus.WAITING_TO_CONVERT.getCode());
                 obj.setCateId(1);
                 obj.setProductionTime("2001-06-05");
 
@@ -67,10 +79,53 @@ public final class ToolServiceImpl implements ToolService {
 
                     for (Map.Entry<String, String> entry : subtitles.entrySet())
                         saveSubtitleHandler(obj, entry.getKey(), entry.getValue());
+
+                    convert(obj, appConfig.getApiConvertCdn() + obj.getId());
                 }
             }
         } catch (Exception e) {
             log.error("ERROR episodeParent: {}, {}", episodeParent, e.getMessage(), e);
+        }
+    }
+
+    private void convert(VcsMedia media, String apiEndpoint) {
+        try {
+            log.info("id: {}", media.getId());
+            updateStatus(media.getId(), MovieStatus.WAITING_TO_CONVERT.getCode());
+            callApiToConvertHandler(media, apiEndpoint);
+        } catch (Exception e) {
+            log.error("media: {}, ERROR: {}", media, e.getMessage(), e);
+        }
+    }
+
+    private void callApiToConvertHandler(VcsMedia dto, String apiEndpoint) {
+        int movieId = dto.getId();
+
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(apiEndpoint, null, String.class);
+
+            // Kiểm tra kết quả gọi API
+            if (response.getStatusCode() == HttpStatus.OK)
+                log.info("Call api convert movie successful, id: {}, dto: {}", movieId, dto);
+            else {
+                log.error("Call api convert movie failed, id: {}, dto: {}", movieId, dto);
+                updateStatus(movieId, MovieStatus.CONVERT_ERROR.getCode());
+            }
+        } catch (Exception e) {
+            log.error("id: {}, dto: {}, ERROR: {}", movieId, dto, e.getMessage(), e);
+            updateStatus(movieId, MovieStatus.CONVERT_ERROR.getCode());
+        }
+    }
+
+    private void updateStatus(int id, int status) {
+        try {
+            Date approvedAt = null;
+            if(status == MovieStatus.APPROVED.getCode())
+                approvedAt = new Date();
+
+            mediaRepository.updateStatus(id, status, approvedAt);
+        } catch (Exception e) {
+            log.error("ERROR|" + e.getMessage(), e);
         }
     }
 

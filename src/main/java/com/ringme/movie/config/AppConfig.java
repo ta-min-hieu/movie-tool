@@ -46,6 +46,9 @@ public class AppConfig {
     @Value("${convert-cdn.api.url}")
     private String apiConvertCdn;
 
+    @Value("${retry-cdn.api.url}")
+    private String apiRetryCdn;
+
     @Value("${app.media.output.root}")
     private String appMediaOutputRoot;
 }
