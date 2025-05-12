@@ -18,10 +18,12 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.File;
 import java.io.InputStream;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.*;
 
 @Log4j2
 @Service
@@ -90,6 +92,102 @@ public final class ToolServiceImpl implements ToolService {
         } catch (Exception e) {
             log.error("ERROR episodeParent: {}, {}", episodeParent, e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void subtitleNotMatchHandler(int movieId, int timeNotMatch) {
+        VcsMedia media = mediaRepository.getVcsMediaConvertDoneById(movieId);
+
+        if(media == null || media.getIsEpisode() == null) {
+            log.error("media is null or isEpisode = null| {}", media);
+            return;
+        }
+
+        int isEpisode = media.getIsEpisode();
+
+        if(isEpisode == 0 || isEpisode == 2)
+            addTextIntoFileSubHandler(media, timeNotMatch);
+        else if(isEpisode == 1) {
+            List<VcsMedia> list = mediaRepository.getListVcsMediaConvertDoneByEpisodeParent(movieId);
+            for (VcsMedia vcsMedia : list)
+                addTextIntoFileSubHandler(vcsMedia, timeNotMatch);
+        } else {
+            log.error("Unknow isEpisode: {}", isEpisode);
+        }
+    }
+
+    private void addTextIntoFileSubHandler(VcsMedia media, int timeNotMatch) {
+        try {
+            String moviePath = media.getMediaPath();
+            if(moviePath == null || moviePath.isEmpty()) {
+                log.error("moviePath is null or empty| {}", media);
+                return;
+            }
+
+            String subtitleFolderPath = "/u02/media02" + moviePath.substring(0, moviePath.lastIndexOf("/")) + "/sub";
+
+            log.info("subtitleFolderPath: {}, timeNotMatch: {}", subtitleFolderPath, timeNotMatch);
+
+            List<String> subtitlePaths = getListSubtitleFilePathInFolderPath(subtitleFolderPath);
+            for(String subtitlePath : subtitlePaths)
+                addTextIntoFileSub(subtitlePath, timeNotMatch);
+
+            log.info("subtitlesPath: {}", subtitlePaths);
+        } catch (Exception e) {
+            log.error("ERROR|{}", e.getMessage(), e);
+        }
+    }
+
+    private void addTextIntoFileSub(String fileSubtitlePath, int timeNotMatch) {
+        try {
+            String template = "X-TIMESTAMP-MAP=LOCAL:00:00:00.000,MPEGTS:";
+            String lineAdd = template + timeNotMatch*90000;
+
+            List<String> lines = Files.readAllLines(Paths.get(fileSubtitlePath));
+            boolean isChangeLine = false;
+
+            int count = 0;
+            for (int i = 0; i < lines.size(); i++) {
+                if(count >= 5)
+                    break;
+
+                if(lines.get(i).contains(template)) {
+                    lines.set(i, lineAdd);
+                    isChangeLine = true;
+                    break;
+                }
+
+                count++;
+            }
+
+            if(!isChangeLine)
+                lines.add(1, lineAdd);
+
+            Files.write(Paths.get(fileSubtitlePath), lines, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+
+            log.info("Dòng đã được thêm thành công!");
+        } catch (Exception e) {
+            log.error("ERROR|{}", e.getMessage(), e);
+        }
+    }
+
+    private List<String> getListSubtitleFilePathInFolderPath(String path) {
+        List<String> listFolderName = new ArrayList<>();
+        File directory = new File(path);
+
+        if (directory.exists() && directory.isDirectory()) {
+            File[] folders = directory.listFiles(File::isDirectory);
+            if (folders != null) {
+                for (File folder : folders) {
+                    log.info(folder.getName());
+                    listFolderName.add(path + "/" + folder.getName() + "/subs_0.vtt");
+                }
+            } else
+                log.error("Không thể đọc nội dung thư mục.");
+        } else
+            log.error("Đường dẫn không tồn tại hoặc không phải thư mục.");
+
+        return listFolderName;
     }
 
     private void convert(VcsMedia media, String apiEndpoint) {

@@ -37,6 +37,4 @@ public interface TestService {
     void generateSubtitleFromMkv();
 
     void filterErrorSubtitle();
-
-    void subtitleNotMatchHandler(int movieId, int timeNotMatch);
 }

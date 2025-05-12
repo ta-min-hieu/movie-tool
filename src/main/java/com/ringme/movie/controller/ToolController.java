@@ -46,4 +46,14 @@ public class ToolController {
 
         return ResponseEntity.ok().body(new Response(200, "Success"));
     }
+
+    @PostMapping("/fix-subtitle-not-match")
+    ResponseEntity<?> fixSubtitleNotMatch(@RequestParam int movieId,
+                                          @RequestParam int timeNotMatch) {
+        log.info("movieId: {}, timeNotMatch: {}", movieId, timeNotMatch);
+
+        toolService.subtitleNotMatchHandler(movieId, timeNotMatch);
+
+        return ResponseEntity.ok().body(new Response(200, "Success"));
+    }
 }
